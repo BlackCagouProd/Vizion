@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-from flask import Flask , render_template, jsonify
+from  io import BytesIO
+from flask import Flask , render_template, jsonify,Response
 import json
 import requests
 from api import Population_api_url
 from matplotlib.figure import Figure
+from matplotlib.backends.backend_agg import FigureCanvasAgg as VC
 
 app = Flask(__name__)
 
@@ -11,22 +13,6 @@ app = Flask(__name__)
 def dashboard():
     param = requests.get(Population_api_url)
     content = json.loads(param.content.decode("utf-8"))
-
-    labels = []
-    values = []
-
-    for key in content:
-        labels.append(key)
-        values.append(content[key])
-
-        print(labels)
-        print(values)
-
-        # fig = Figure()
-        # ax1 = fig.subplots(1, 1)
-        # ax1.bar(labels, values)
-        # fig.savefig("test.png",format="png")
-
     if param.status_code != 200:
         return jsonify({
             'status': 'error',
@@ -38,7 +24,29 @@ def dashboard():
     #         'data': []
     #     })
 
-    return render_template("dashboard.html", content=content)
+    labels = []
+    values = []
+
+    for key in content:
+        labels.append(key)
+        values.append(content[key])
+
+        print(labels)
+        print(values)
+
+        fig = Figure()
+        ax1 = fig.subplots(1, 1)
+        ax1.bar(labels, values)
+        # fig.savefig("img.png", format="png")
+
+        output=BytesIO()
+        VC(fig).print_png(output)
+        return Response(output.getvalue(), mimetype="image/png")
+
+
+
+
+    return render_template("dashboard.html" , content=Response)
 
 if __name__ == "__main__":
     app.run(debug=True)
